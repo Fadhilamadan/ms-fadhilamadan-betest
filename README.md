@@ -8,6 +8,7 @@ This project implements a Node.js microservices architecture using Express for C
 - [Prerequisites](#prerequisites)
 - [Project Setup](#project-setup)
 - [Environment Variables](#environment-variables)
+- [Sample User Credentials](#sample-user-credentials)
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
 - [JWT Authentication](#jwt-authentication)
@@ -63,6 +64,15 @@ MONGO_URI=mongodb://localhost:27017/your_database_name
 
 Ensure that they are correctly set according to your environment.
 
+## Sample User Credentials
+
+For convenience, the following sample user credentials are provided. You can use these to log in and test the application's authentication and user management features.
+
+- **Username**: `fadhilamadan`
+- **Password**: `password`
+
+These credentials are pre-populated in the database. You can use them directly to generate a JWT token via the login API.
+
 ## Running the Application
 
 ### 1. Start the Application
@@ -84,18 +94,47 @@ The application will be available at `http://localhost:3000/api`. You can use Po
 ### 1. Account Login
 
 - **POST** `/api/account/login`
-   - Request Body: `{ "userName": "string", "password": "string" }`
-   - Response: `{ "token": "JWT Token" }`
+  - Request Body:
+    ```json
+    {
+      "userName": "fadhilamadan",
+      "password": "password"
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "token": "JWT Token"
+    }
+    ```
 
 ### 2. User Info
 
 - **GET** `/api/user/accountNumber/:accountNumber`
-   - Request Header: `Authorization: Bearer <JWT Token>`
-   - Response: `{ "userId": "string", "fullName": "string", ... }`
-
+  - Request Header: `Authorization: Bearer <JWT Token>`
+  - Response:
+    ```json
+    {
+      "userId": "string",
+      "fullName": "string",
+      "accountNumber": "string",
+      "emailAddress": "string",
+      "registrationNumber": "string"
+    }
+    ```
+    
 - **GET** `/api/user/registrationNumber/:registrationNumber`
-   - Request Header: `Authorization: Bearer <JWT Token>`
-   - Response: `{ "userId": "string", "fullName": "string", ... }`
+  - Request Header: `Authorization: Bearer <JWT Token>`
+  - Response:
+    ```json
+    {
+      "userId": "string",
+      "fullName": "string",
+      "accountNumber": "string",
+      "emailAddress": "string",
+      "registrationNumber": "string"
+    }
+    ```
 
 ### 3. JWT Authentication
 
