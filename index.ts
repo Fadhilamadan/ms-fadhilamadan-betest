@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import apiRouter from "./src/routes/api.router";
+import apiRouter from "src/routes/api.router";
 
 dotenv.config();
 
