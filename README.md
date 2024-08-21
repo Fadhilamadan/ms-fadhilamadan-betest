@@ -1,4 +1,4 @@
-# Jenius: Technical Test
+# Technical Test
 
 ## Description
 This project implements a Node.js microservices architecture using Express for CRUD operations. The data is stored in MongoDB, and the application includes JWT-based authentication. The project also integrates with Redis for caching.
