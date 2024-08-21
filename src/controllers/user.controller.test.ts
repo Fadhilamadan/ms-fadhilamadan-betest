@@ -37,7 +37,7 @@ describe("UserController", () => {
   });
 
   describe("createUser", () => {
-    it("should create and return a new user", async () => {
+    it("should create and return a new user and cache the user data", async () => {
       req = {
         body: { fullName: user.fullName, emailAddress: user.emailAddress },
         user: { userId: user.userId },
@@ -47,7 +47,16 @@ describe("UserController", () => {
       (User as unknown as jest.Mock).mockImplementation(() => mockUser);
       await createUser(req as Request, res as Response);
 
+      const accountNumberCacheKey = `userAccountNumber:${user.accountNumber}`;
+      const registrationNumberCacheKey = `userRegistrationNumber:${user.registrationNumber}`;
+
       expect(mockUser.save).toHaveBeenCalled();
+      expect(setCache).toHaveBeenCalledWith(accountNumberCacheKey, user, 3600);
+      expect(setCache).toHaveBeenCalledWith(
+        registrationNumberCacheKey,
+        user,
+        3600,
+      );
       expect(res.json).toHaveBeenCalledWith(user);
       expect(User).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -75,8 +84,8 @@ describe("UserController", () => {
   });
 
   describe("getUserByAccountNumber", () => {
-    it("should return user from cache if available", async () => {
-      req = { params: { accountNumber: "12345" } };
+    it("should return user from cache if available and authorized", async () => {
+      req = { params: { accountNumber: "12345" }, user: { userId: "1" } };
 
       (getCache as jest.Mock).mockResolvedValue(user);
       await getUserByAccountNumber(req as Request, res as Response);
@@ -88,8 +97,8 @@ describe("UserController", () => {
       expect(res.send).not.toHaveBeenCalled();
     });
 
-    it("should fetch user from database if not cached", async () => {
-      req = { params: { accountNumber: "12345" } };
+    it("should fetch user from database if not cached and authorized", async () => {
+      req = { params: { accountNumber: "12345" }, user: { userId: "1" } };
 
       (getCache as jest.Mock).mockResolvedValue(null);
       (User.findOne as jest.Mock).mockResolvedValue(user);
@@ -109,6 +118,35 @@ describe("UserController", () => {
       expect(res.send).not.toHaveBeenCalled();
     });
 
+    it("should return 403 if user is not authorized to access cached data", async () => {
+      req = { params: { accountNumber: "12345" }, user: { userId: "2" } };
+
+      (getCache as jest.Mock).mockResolvedValue(user);
+      await getUserByAccountNumber(req as Request, res as Response);
+
+      expect(getCache).toHaveBeenCalledWith("userAccountNumber:12345");
+      expect(User.findOne).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Access Denied: Invalid Request Account Number!",
+      });
+    });
+
+    it("should return 403 if user is not authorized to access database data", async () => {
+      req = { params: { accountNumber: "12345" }, user: { userId: "2" } };
+
+      (getCache as jest.Mock).mockResolvedValue(null);
+      (User.findOne as jest.Mock).mockResolvedValue(user);
+      await getUserByAccountNumber(req as Request, res as Response);
+
+      expect(User.findOne).toHaveBeenCalledWith({ accountNumber: "12345" });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Access Denied: Invalid Request Account Number!",
+      });
+      expect(setCache).not.toHaveBeenCalled();
+    });
+
     it("should return 404 if user not found", async () => {
       req = { params: { accountNumber: "12345" } };
 
@@ -117,7 +155,9 @@ describe("UserController", () => {
       await getUserByAccountNumber(req as Request, res as Response);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Invalid: User Not Found",
+      });
     });
 
     it("should handle errors", async () => {
@@ -134,8 +174,8 @@ describe("UserController", () => {
   });
 
   describe("getUserByRegistrationNumber", () => {
-    it("should return user from cache if available", async () => {
-      req = { params: { registrationNumber: "67890" } };
+    it("should return user from cache if available and authorized", async () => {
+      req = { params: { registrationNumber: "67890" }, user: { userId: "1" } };
 
       (getCache as jest.Mock).mockResolvedValue(user);
       await getUserByRegistrationNumber(req as Request, res as Response);
@@ -147,8 +187,8 @@ describe("UserController", () => {
       expect(res.send).not.toHaveBeenCalled();
     });
 
-    it("should fetch user from database if not cached", async () => {
-      req = { params: { registrationNumber: "67890" } };
+    it("should fetch user from database if not cached and authorized", async () => {
+      req = { params: { registrationNumber: "67890" }, user: { userId: "1" } };
 
       (getCache as jest.Mock).mockResolvedValue(null);
       (User.findOne as jest.Mock).mockResolvedValue(user);
@@ -170,6 +210,37 @@ describe("UserController", () => {
       expect(res.send).not.toHaveBeenCalled();
     });
 
+    it("should return 403 if user is not authorized to access cached data", async () => {
+      req = { params: { registrationNumber: "67890" }, user: { userId: "2" } };
+
+      (getCache as jest.Mock).mockResolvedValue(user);
+      await getUserByRegistrationNumber(req as Request, res as Response);
+
+      expect(getCache).toHaveBeenCalledWith("userRegistrationNumber:67890");
+      expect(User.findOne).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Access Denied: Invalid Request Registration Number!",
+      });
+    });
+
+    it("should return 403 if user is not authorized to access database data", async () => {
+      req = { params: { registrationNumber: "67890" }, user: { userId: "2" } };
+
+      (getCache as jest.Mock).mockResolvedValue(null);
+      (User.findOne as jest.Mock).mockResolvedValue(user);
+      await getUserByRegistrationNumber(req as Request, res as Response);
+
+      expect(User.findOne).toHaveBeenCalledWith({
+        registrationNumber: "67890",
+      });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Access Denied: Invalid Request Registration Number!",
+      });
+      expect(setCache).not.toHaveBeenCalled();
+    });
+
     it("should return 404 if user not found", async () => {
       req = { params: { registrationNumber: "67890" } };
 
@@ -178,7 +249,9 @@ describe("UserController", () => {
       await getUserByRegistrationNumber(req as Request, res as Response);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Invalid: User Not Found",
+      });
     });
 
     it("should handle errors", async () => {
